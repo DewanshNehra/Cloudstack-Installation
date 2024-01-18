@@ -10,7 +10,7 @@ This script automates the installation of Cloudstack 4.18 on Ubuntu 22.04. It wa
 ```
 2. Change the directory to that folder:
 ```bash
-   cd cloudstack-installation
+   cd Cloudstack-Installation
 ```
 3. Make the script executable with the command: 
 ```bash
