@@ -6,7 +6,7 @@ This script automates the installation of Cloudstack 4.18 on Ubuntu 22.04. It wa
 
 1. Download the script using git clone command:
 ```bash
-    [git clone <https://github.com/DewanshNehra/Cloudstack-Installation>](https://github.com/DewanshNehra/Cloudstack-Installation.git)
+    git clone https://github.com/DewanshNehra/Cloudstack-Installation
 ```
 2. Change the directory to that folder:
 ```bash
