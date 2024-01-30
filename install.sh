@@ -47,25 +47,31 @@ apt update && apt upgrade -y
 
 GATEWAY=$(ip r | awk '/default/ {print $3}')
 IP=$(ip r | awk '/src/ {print $9}')
+ADAPTER=$(ip link | awk -F: '$0 !~ "lo|vir|wl|^[^0-9]"{print $2;getline}')
 
-
-IP=$(ip r | awk '/src/ {print $9}')
-echo -e "127.0.0.1\tlocalhost\n$IP\tdevil.dewansnehra.xyz\tdevil" | sudo tee /etc/hosts
-
-
-cp /etc/netplan/01-network-manager-all.yaml /etc/netplan/01-network-manager-all.yaml.bak
-
-
-echo "network:
+HOSTS_CONTENT="127.0.0.1\tlocalhost\n$IP\tdevil.dewansnehra.xyz\tdevil"
+NETPLAN_CONTENT="network:
     ethernets:
-        enp0s3:
+        $ADAPTER:
             dhcp4: false
             addresses: [$IP/24]
             gateway4: $GATEWAY
             nameservers:
                 addresses: [8.8.8.8, 8.8.4.4]
-    version: 2" | sudo tee /etc/netplan/01-network-manager-all.yaml
+    version: 2"
 
+CURRENT_GATEWAY=$(grep -oP '(?<=gateway4: )[^ ]*' /etc/netplan/01-network-manager-all.yaml)
+
+if ! grep -Fxq "$HOSTS_CONTENT" /etc/hosts
+then
+    echo -e "$HOSTS_CONTENT" | sudo tee /etc/hosts
+fi
+
+if [ "$CURRENT_GATEWAY" != "$GATEWAY" ]
+then
+    cp /etc/netplan/01-network-manager-all.yaml /etc/netplan/01-network-manager-all.yaml.bak
+    echo "$NETPLAN_CONTENT" | sudo tee /etc/netplan/01-network-manager-all.yaml
+fi
 
 netplan apply
 netplan apply
