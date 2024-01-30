@@ -136,6 +136,8 @@ echo "
 ###################################################################################
 ####           Installation done. You can go to http://localhost:8080          ####
 ####           to access the pannel.                                           ####
+####           Username : admin                                                ####
+####           Password : password                                             ####
 ####           Dewans Nehra -  https://dewansnehra.xyz                         ####
 ###################################################################################
 "
