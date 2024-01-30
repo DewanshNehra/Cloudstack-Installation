@@ -12,13 +12,14 @@ if [ "$EUID" -ne 0 ]
 fi
 
 UBUNTU_VERSION=$(lsb_release -rs)
-REQUIRED_VERSION="22.04"
+REQUIRED_VERSION1="22."
+REQUIRED_VERSION2="20."
 
-if (( $(echo "$UBUNTU_VERSION < $REQUIRED_VERSION" | bc -l) ))
+if (( $(echo "$UBUNTU_VERSION < $REQUIRED_VERSION1" | bc -l) )) && [[ "$UBUNTU_VERSION" != $REQUIRED_VERSION2* ]]
 then
     echo "
     ############################################################################# 
-    ##         This script requires Ubuntu version 22.04 or higher            ##   
+    ##         This script requires Ubuntu version 22.04 or 20.xx             ##   
     #############################################################################
     "
     sleep 15
@@ -78,7 +79,18 @@ netplan apply
 
 apt-get install -y openntpd openssh-server sudo vim htop tar intel-microcode bridge-utils mysql-server
 
-echo deb [arch=amd64] http://download.cloudstack.org/ubuntu jammy 4.18  > /etc/apt/sources.list.d/cloudstack.list
+UBUNTU_VERSION=$(lsb_release -rs)
+
+if [[ "$UBUNTU_VERSION" == "20."* ]]
+then
+    echo deb [arch=amd64] http://download.cloudstack.org/ubuntu focal 4.18  > /etc/apt/sources.list.d/cloudstack.list
+elif [[ "$UBUNTU_VERSION" == "22."* ]]
+then
+    echo deb [arch=amd64] http://download.cloudstack.org/ubuntu jammy 4.18  > /etc/apt/sources.list.d/cloudstack.list
+else
+    echo "Unsupported Ubuntu version. This script supports Ubuntu 20.xx and 22.xx only."
+    exit 1
+fi
 
 wget -O - http://download.cloudstack.org/release.asc|gpg --dearmor > cloudstack-archive-keyring.gpg
 
@@ -106,7 +118,7 @@ SELECT user,authentication_string,plugin,host FROM mysql.user;
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'dewansnehra';
 use mysql;
 UPDATE user SET plugin='mysql_native_password' WHERE User='root';
-flush privileges;
+flush privileges;   
 "
 apt-get install -y cloudstack-management cloudstack-usage
 cloudstack-setup-databases devil:devil@localhost --deploy-as=root:dewansnehra
