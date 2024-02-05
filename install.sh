@@ -1,5 +1,4 @@
 #!/bin/bash
-
 if [ "$EUID" -ne 0 ]
   then echo "
   ############################################################################# 
@@ -51,15 +50,35 @@ IP=$(ip r | awk '/src/ {print $9}')
 ADAPTER=$(ip link | awk -F: '$0 !~ "lo|vir|wl|^[^0-9]"{print $2;getline}')
 
 HOSTS_CONTENT="127.0.0.1\tlocalhost\n$IP\tdevil.dewansnehra.xyz\tdevil"
+apt install bridge-utils
+
+
+# Check if the bridge already exists
+if ! brctl show | grep -q 'br0'; then
+    brctl addbr br0
+fi
+
+# Check if the interface is already added to the bridge
+if ! brctl show br0 | grep -q "$ADAPTER"; then
+    brctl addif br0 $ADAPTER
+fi
+
 NETPLAN_CONTENT="network:
+    version: 2
+    renderer: networkd
     ethernets:
         $ADAPTER:
-            dhcp4: false
+            dhcp4: no
+            dhcp6: no
+    bridges:
+        br0:
+            interfaces: [$ADAPTER]
+            dhcp4: no
+            dhcp6: no
             addresses: [$IP/24]
             gateway4: $GATEWAY
             nameservers:
-                addresses: [8.8.8.8, 8.8.4.4]
-    version: 2"
+                addresses: [8.8.8.8, 8.8.4.4]"
 
 CURRENT_GATEWAY=$(grep -oP '(?<=gateway4: )[^ ]*' /etc/netplan/01-network-manager-all.yaml)
 
@@ -76,6 +95,10 @@ fi
 
 netplan apply
 netplan apply
+systemctl restart NetworkManager
+hostnamectl set-hostname devil.dewansnehra.xyz
+
+
 
 apt-get install -y openntpd openssh-server sudo vim htop tar intel-microcode bridge-utils mysql-server
 
@@ -92,18 +115,23 @@ else
     exit 1
 fi
 
+
 wget -O - http://download.cloudstack.org/release.asc|gpg --dearmor > cloudstack-archive-keyring.gpg
+
 
 mv cloudstack-archive-keyring.gpg /etc/apt/trusted.gpg.d/
 
+
 apt update && apt upgrade -y
 apt-get install -y cloudstack-management cloudstack-usage
+
 
 
 echo -e "\nserver_id = 1\nsql-mode=\"STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION,ERROR_FOR_DIVISION_BY_ZERO,NO_ZERO_DATE,NO_ZERO_IN_DATE,NO_ENGINE_SUBSTITUTION\"\ninnodb_rollback_on_timeout=1\ninnodb_lock_wait_timeout=600\nmax_connections=1000\nlog-bin=mysql-bin\nbinlog-format = 'ROW'" | sudo tee -a /etc/mysql/mysql.conf.d/mysqld.cnf
 
 
 echo -e "[mysqld]" | sudo tee /etc/mysql/mysql.conf.d/cloudstack.cnf
+
 
 systemctl restart mysql
 
@@ -126,12 +154,25 @@ cloudstack-setup-databases devil:devil@localhost --deploy-as=root:dewansnehra
 
 cloudstack-setup-management
 
+ufw allow mysql
+mkdir -p /export/primary
+mkdir -p /export/secondary
+echo "/export *(rw,async,no_root_squash,no_subtree_check)" | sudo tee -a /etc/exports
+apt install nfs-kernel-server
+service nfs-kernel-server restart
+mkdir -p /mnt/primary
+mkdir -p /mnt/secondary
+mount -t nfs localhost:/export/primary /mnt/primary
+mount -t nfs localhost:/export/secondary /mnt/secondary
+
+
 echo "
 ###################################################################################
 ####           Thank you for using this script.                                ####
 ####       Dewans Nehra -  https://dewansnehra.xyz                             #### 
 ###################################################################################
 "
+
 width=$(tput cols)
 progress_width=$((width - 20))
 sleep_duration=$(echo "60 / $progress_width" | bc -l)
@@ -142,8 +183,6 @@ do
     echo -n "#"
 done
 echo "]"
-
-
 echo "
 ###################################################################################
 ####           Installation done. You can go to http://localhost:8080          ####
