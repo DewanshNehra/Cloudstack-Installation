@@ -93,7 +93,8 @@ then
     echo "$NETPLAN_CONTENT" | sudo tee /etc/netplan/01-network-manager-all.yaml
 fi
 
-
+netplan apply
+netplan apply
 systemctl restart NetworkManager
 hostnamectl set-hostname devil.dewansnehra.xyz
 
@@ -150,7 +151,7 @@ flush privileges;
 apt-get install -y cloudstack-management cloudstack-usage
 cloudstack-setup-databases devil:devil@localhost --deploy-as=root:dewansnehra
 
-
+cloudstack-setup-management
 
 
 ufw allow mysql
