@@ -25,17 +25,28 @@ then
     exit
 fi
 
+log_and_run() {
+    USER=$(whoami)
+    HOST=$(hostname)
+    DIR=$(pwd)
+    CMD=$1
+
+    echo -n "$USER@$HOST: $DIR# "
+    echo $CMD
+    eval $CMD
+}
 
 
-apt update && apt upgrade -y
 
+log_and_run "apt update && apt upgrade -y"
+log_and_run "ip r"
 
 GATEWAY=$(ip r | awk '/default/ {print $3}')
 IP=$(ip r | awk '/src/ {print $9}')
 ADAPTER=$(ip link | awk -F: '$0 !~ "lo|vir|wl|^[^0-9]"{print $2;getline}')
 
 HOSTS_CONTENT="127.0.0.1\tlocalhost\n$IP\tdevil.dewansnehra.xyz\tdevil"
-apt install bridge-utils
+log_and_run "apt install bridge-utils"
 
 
 if ! brctl show | grep -q 'br0'; then
@@ -77,14 +88,14 @@ then
     echo "$NETPLAN_CONTENT" | sudo tee /etc/netplan/01-network-manager-all.yaml
 fi
 
-netplan apply
-netplan apply
-systemctl restart NetworkManager
-hostnamectl set-hostname devil.dewansnehra.xyz
+log_and_run "netplan apply"
+log_and_run "netplan apply"
+log_and_run "systemctl restart NetworkManager"
+log_and_run "hostnamectl set-hostname devil.dewansnehra.xyz"
 
 
 
-apt-get install -y openntpd openssh-server sudo vim htop tar intel-microcode bridge-utils mysql-server
+log_and_run "apt-get install -y openntpd openssh-server sudo vim htop tar intel-microcode bridge-utils mysql-server"
 
 UBUNTU_VERSION=$(lsb_release -rs)
 
@@ -100,14 +111,15 @@ else
 fi
 
 
-wget -O - http://download.cloudstack.org/release.asc|gpg --dearmor > cloudstack-archive-keyring.gpg
+
+log_and_run "wget -O - http://download.cloudstack.org/release.asc|gpg --dearmor > cloudstack-archive-keyring.gpg"
 
 
-mv cloudstack-archive-keyring.gpg /etc/apt/trusted.gpg.d/
+log_and_run "mv cloudstack-archive-keyring.gpg /etc/apt/trusted.gpg.d/"
 
 
-apt update && apt upgrade -y
-apt-get install -y cloudstack-management cloudstack-usage
+log_and_run "apt update && apt upgrade -y"
+log_and_run "apt-get install -y cloudstack-management cloudstack-usage"
 
 
 
@@ -117,7 +129,7 @@ echo -e "\nserver_id = 1\nsql-mode=\"STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION,
 echo -e "[mysqld]" | sudo tee /etc/mysql/mysql.conf.d/cloudstack.cnf
 
 
-systemctl restart mysql
+log_and_run "systemctl restart mysql"
 
 
 
@@ -128,13 +140,13 @@ use mysql;
 UPDATE user SET plugin='mysql_native_password' WHERE User='root';
 flush privileges;   
 "
-apt-get install -y cloudstack-management cloudstack-usage
-cloudstack-setup-databases devil:devil@localhost --deploy-as=root:dewansnehra
+log_and_run "apt-get install -y cloudstack-management cloudstack-usage"
+log_and_run "cloudstack-setup-databases devil:devil@localhost --deploy-as=root:dewansnehra"
 
 
-cloudstack-setup-management
+log_and_run "cloudstack-setup-management"
 
-ufw allow mysql
+log_and_run "ufw allow mysql"
 mkdir -p /export/primary
 mkdir -p /export/secondary
 echo "/export *(rw,async,no_root_squash,no_subtree_check)" | sudo tee -a /etc/exports
