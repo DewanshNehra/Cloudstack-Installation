@@ -1,6 +1,6 @@
 - search for `core isolation` on windows search and make sure it is turned off
 
-<img src = 'img/1.PNG' ></img>
+<img src = 'img/1.png' ></img>
 
 - open a command prompt and run these commands (**make sure your vm is shutdown during these steps**)
     - `cd C:\Program Files\Oracle\VirtualBox`
